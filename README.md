@@ -1,4 +1,4 @@
-# Weave
+# weave
 
 > A concurrent web crawler built around one idea: **different compute profiles need different concurrency models.**
 
