@@ -12,6 +12,7 @@ dependencies = [
     "mcp>=1.27.0",
     "pydantic>=2.13.2",
     "redis>=7.4.0",
+    "requests>=2.33.1",
     "rich>=15.0.0",
     "sqlalchemy>=2.0.49",
 ]
