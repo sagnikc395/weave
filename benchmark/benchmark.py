@@ -61,9 +61,6 @@ class _Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    def log_message(self, *_):
-        pass
-
 
 def start_local_server() -> None:
     server = HTTPServer(("localhost", 8765), _Handler)
