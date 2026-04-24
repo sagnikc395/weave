@@ -71,7 +71,7 @@ Weave exposes its knowledge base as an MCP server — query everything it's craw
 ## Quickstart
 
 ```bash
-git clone https://github.com/yourname/weave
+git clone https://github.com/sagnikc395/weave
 cd weave
 pip install -e .
 
