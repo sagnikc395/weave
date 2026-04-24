@@ -194,12 +194,4 @@ Run it with:
 - Redis is installed as a future dependency but not used
 - there is no Docker or deployment setup in the repo yet
 
-## Why This Project Exists
 
-This codebase exists to make Python concurrency tradeoffs concrete:
-
-- `asyncio` is used where the bottleneck is waiting on the network
-- processes are preferred for CPU-heavy parsing when available
-- a lock protects exact URL deduplication in shared in-memory state
-
-The point is not "use asyncio everywhere." The point is to use the concurrency primitive that matches the bottleneck.
