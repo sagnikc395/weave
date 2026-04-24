@@ -1,7 +1,6 @@
 import asyncio
 import json
 
-
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import TextContent, Tool
@@ -94,6 +93,6 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
     return [TextContent(type="text", text=f"Unknown tool: {name}")]
 
 
-async def serve():
+async def serve_stdio():
     async with stdio_server() as (r, w):
         await server.run(r, w, server.create_initialization_options())

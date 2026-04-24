@@ -1,6 +1,7 @@
 import asyncio
 import time
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import Executor, ProcessPoolExecutor, ThreadPoolExecutor
+from dataclasses import asdict, dataclass
 from urllib.parse import urlparse
 
 from rich.console import Console
@@ -14,6 +15,15 @@ from .parser import ParseResult, parse_html
 from .storage import Page, Store
 
 console = Console()
+
+
+@dataclass
+class CrawlSummary:
+    pages_crawled: int
+    errors: int
+    elapsed_seconds: float
+    frontier_visited: int
+    store_stats: dict
 
 
 class Crawler:
@@ -41,6 +51,15 @@ class Crawler:
         t.add_row("[bold]Visited[/]", str(self.frontier.visited_count))
         t.add_row("[bold]Rate[/]", f"{rate:.1f} pages/s")
         return t
+
+    def _build_parser_executor(self) -> Executor:
+        try:
+            return ProcessPoolExecutor(max_workers=4)
+        except (OSError, PermissionError):
+            console.print(
+                "[yellow]ProcessPoolExecutor unavailable in this environment; falling back to threads.[/]"
+            )
+            return ThreadPoolExecutor(max_workers=4)
 
     async def _worker(self, fetcher: Fetcher, executor: ProcessPoolExecutor):
         loop = asyncio.get_running_loop()
@@ -77,6 +96,7 @@ class Crawler:
                 status=parsed.status,
                 depth=depth,
             ))
+            self.store.save_links(parsed.url, parsed.links)
             self._pages_crawled += 1
 
             if depth < self.config.max_depth:
@@ -86,7 +106,7 @@ class Crawler:
 
             self.frontier.task_done()
 
-    async def run(self):
+    async def run(self) -> CrawlSummary:
         for url in self.config.seed_urls:
             await self.frontier.push(url, 0)
 
@@ -94,7 +114,7 @@ class Crawler:
             concurrency=self.config.concurrency,
             per_domain_delay=self.config.per_domain_delay,
         ) as fetcher:
-            with ProcessPoolExecutor(max_workers=4) as executor:
+            with self._build_parser_executor() as executor:
                 with Live(self._status_table(), refresh_per_second=2, console=console):
                     workers = [
                         asyncio.create_task(self._worker(fetcher, executor))
@@ -102,5 +122,17 @@ class Crawler:
                     ]
                     await asyncio.gather(*workers)
 
+        elapsed = time.time() - self._start_time
+        stats = self.store.stats()
         console.print(f"\n[bold green]Done.[/] {self._pages_crawled} pages crawled, {self._errors} errors.")
-        console.print(self.store.stats())
+        console.print(stats)
+        return CrawlSummary(
+            pages_crawled=self._pages_crawled,
+            errors=self._errors,
+            elapsed_seconds=elapsed,
+            frontier_visited=self.frontier.visited_count,
+            store_stats=stats,
+        )
+
+    def run_sync(self) -> dict:
+        return asdict(asyncio.run(self.run()))
